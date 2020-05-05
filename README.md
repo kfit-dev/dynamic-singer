@@ -1,6 +1,6 @@
 <p align="center">
     <a href="#readme">
-        <img alt="logo" width="40%" src="picture.png">
+        <img alt="logo" width="40%" src="picture/picture.png">
     </a>
 </p>
 
