@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 @gen.coroutine
 def _sinking(line, target):
-    if isinstance(target.target, str):
+    if isinstance(target.target, Popen):
         target.target.stdin.write('{}'.format(line).encode())
-        target.target.flush()
+        target.target.stdin.flush()
         r = target.target.stdout.readline()
     else:
         r = target.target.parse(line)
@@ -40,7 +40,7 @@ class Source:
         port: int = 8000,
     ):
 
-        if not isinstance(source, str) or not hasattr(source, 'emit'):
+        if not isinstance(source, str) and not hasattr(source, 'emit'):
             raise ValueError(
                 'source must a string or an object with method `emit`'
             )
@@ -53,6 +53,7 @@ class Source:
             )
             f = source_name
         else:
+            self.source = source
             f = source
         self._targets = []
         start_http_server(port)
@@ -67,7 +68,7 @@ class Source:
         )
 
     def add(self, target):
-        if not isinstance(target, str) or not hasattr(source, 'parse'):
+        if not isinstance(target, str) and not hasattr(source, 'parse'):
             raise ValueError(
                 'target must a string or an object with method `parse`'
             )
@@ -75,19 +76,32 @@ class Source:
 
     @check_type
     def start(self, debug = True, asynchronous: bool = False):
-        self._pipes = []
+
+        if not len(self._targets):
+            raise Exception(
+                'targets are empty, please add a target using `source.add()` first.'
+            )
+        self._pipes, self._threads = [], []
         for target in self._targets:
             if isinstance(target, str):
                 p = Popen(
-                    target.split(), stdout = PIPE, stdin = PIPE, stderr = STDOUT
+                    target.split(), stdout = PIPE, stdin = PIPE, stderr = PIPE
                 )
+                t = helper.Check_Error(p)
+                t.start()
+                self._threads.append(t)
             else:
                 p = target
 
-            self._pipes.append(helper.Target(target))
+            self._pipes.append(helper.Target(p))
 
         if isinstance(self.source, str):
-            pse = os.popen(self.source)
+            pse = Popen(
+                self.source.split(), stdout = PIPE, stdin = PIPE, stderr = PIPE
+            )
+            t = helper.Check_Error(pse)
+            t.start()
+            pse = iter(pse.stdout.readline, b'')
         else:
             pse = self.source
 
@@ -96,22 +110,22 @@ class Source:
                 if debug:
                     logger.warning(line)
 
-            self._tap_count.inc()
-            self._tap_data.observe(sys.getsizeof(line) / 1000)
-            self._tap_data_histogram.observe(sys.getsizeof(line) / 1000)
+                self._tap_count.inc()
+                self._tap_data.observe(sys.getsizeof(line) / 1000)
+                self._tap_data_histogram.observe(sys.getsizeof(line) / 1000)
 
-            if asynchronous:
+                if asynchronous:
 
-                @gen.coroutine
-                def loop():
-                    r = yield [_sinking(line, pipe) for pipe in self._pipes]
+                    @gen.coroutine
+                    def loop():
+                        r = yield [_sinking(line, pipe) for pipe in self._pipes]
 
-                result = loop()
-                if debug:
-                    logger.warning(result.result())
-
-            else:
-                for pipe in self._pipes:
-                    result = _sinking(line, pipe)
+                    result = loop()
                     if debug:
                         logger.warning(result.result())
+
+                else:
+                    for pipe in self._pipes:
+                        result = _sinking(line, pipe)
+                        if debug:
+                            logger.warning(result.result())

@@ -1,3 +1,4 @@
+import threading
 from dynamic_singer import function
 from jsonschema import validate
 from genson import SchemaBuilder
@@ -79,3 +80,13 @@ class Target:
         self._tap_data_histogram = Histogram(
             f'data_size_histogram_{f}', f'histogram of data size {f} (KB)'
         )
+
+
+class Check_Error(threading.Thread):
+    def __init__(self, pipe):
+        self.pipe = pipe
+        threading.Thread.__init__(self)
+
+    def run(self):
+        with self.pipe.stderr:
+            function.log_subprocess_output(self.pipe.stderr)
