@@ -22,7 +22,7 @@ This library is an extension for singer.io for easier deployment, metrices, auto
     * [Tap Python object](#Tap-Python-object)
       * [Rules if we use an object](#Rules-if-we-use-an-object)
     * [Target Python object](#Target-Python-object)
-      * [Rules if we use an object](#Rules-if-we-use-an-object)
+      * [Rules if we use an object](#rules-if-we-use-an-object-1)
 
 ## Installing from the PyPI
 
@@ -198,6 +198,12 @@ ValueError: tap.emit() must returned a dict
 4. `tap_name` is necessary, this is name for the tap.
 5. `tap_key` is necessary, it acted as primary key for the tap.
 
+If `tap_key` not inside the dictionary, it will throw an error,
+
+```text
+ValueError: tap key not exist in elements from tap
+```
+
 ### Target Python object
 
 Now if we look into target provided by singer.io, example like, https://github.com/singer-io/target-gsheet, or https://github.com/RealSelf/target-bigquery, to build target is complicated and must able to value from terminal pipe.
@@ -234,3 +240,9 @@ After that, check [test.txt](example/test.txt),
 #### Rules if we use an object
 
 1. Must has `parse` method.
+
+If not, it will throw an error,
+
+```text
+ValueError: target must a string or an object with method `parse`
+```
