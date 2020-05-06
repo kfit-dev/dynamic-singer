@@ -24,6 +24,12 @@ This library is an extension for singer.io for easier deployment, metrices, auto
     * [Target Python object](#Target-Python-object)
       * [Rules if we use an object](#rules-if-we-use-an-object-1)
   * [Example](#Example)
+  * [Usage](#Usage)
+    * [dynamic_singer.Source](#dynamic_singer.Source)
+      * [dynamic_singer.Source.add](#dynamic_singer.Source.add)
+      * [dynamic_singer.Source.get_targets](#dynamic_singer.Source.get_targets)
+      * [dynamic_singer.Source.delete_target](#dynamic_singer.Source.delete_target)
+      * [dynamic_singer.Source.start](#dynamic_singer.Source.start)
 
 ## Installing from the PyPI
 
@@ -268,8 +274,87 @@ use Python object as a Tap and target to gsheet.
 
 Tap from fixerio and save to file using Python object as a Target.
 
-5 [fixerio-writefile-gsheet-bigquery.ipynb]
+5. [fixerio-gsheet-writefile-bq.ipynb](example/fixerio-gsheet-writefile-bq.ipynb)
 
 Tap from fixerio and save to gsheet, save to file using Python object as a Target and save to bigquery.
 
 <img alt="logo" width="40%" src="picture/bigquery.png">
+
+## Usage
+
+### dynamic_singer.Source
+
+```python
+class Source:
+    def __init__(
+        self,
+        tap,
+        tap_schema: Dict = None,
+        tap_name: str = None,
+        tap_key: str = None,
+        port: int = 8000,
+    ):
+        """
+        Parameters
+        ----------
+        tap: str / object
+            tap source.
+        tap_schema: Dict, (default=None)
+            data schema if tap an object. If `tap_schema` is None, it will auto generate schema.
+        tap_name: str, (default=None)
+            name for tap, necessary if tap is an object. it will throw an error if not a string if tap is an object.
+        tap_key: str, (default=None)
+            important non-duplicate key from `tap.emit()`, usually a timestamp.
+        port: int, (default=8000)
+            prometheus exporter port.
+        """
+```
+
+#### dynamic_singer.Source.add
+
+```python
+def add(self, target):
+    """
+    Parameters
+    ----------
+    target: str / object
+        target source.
+    """
+```
+
+#### dynamic_singer.Source.get_targets
+
+```python
+def get_targets(self):
+    """
+    Returns
+    ----------
+    result: list of targets
+    """
+```
+
+#### dynamic_singer.Source.delete_target
+
+```python
+def delete_target(self, index: int):
+    """
+    Parameters
+    ----------
+    index: int
+        target index from `get_targets()`.
+    """
+```
+
+#### dynamic_singer.Source.start
+
+```python
+def start(self, debug: bool = True, asynchronous: bool = False):
+    """
+    Parameters
+    ----------
+    debug: bool, (default=True)
+        If True, will print every rows emitted and parsed.
+    asynchronous: bool, (default=False)
+        If True, emit to targets in async manner, else, loop from first target until last target.
+    """
+```

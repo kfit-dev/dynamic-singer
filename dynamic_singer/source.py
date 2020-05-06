@@ -108,6 +108,11 @@ class Source:
         self._targets.append(target)
 
     def get_targets(self):
+        """
+        Returns
+        ----------
+        result: list of targets
+        """
         return self._targets
 
     @check_type
