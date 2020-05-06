@@ -23,6 +23,7 @@ This library is an extension for singer.io for easier deployment, metrices, auto
       * [Rules if we use an object](#Rules-if-we-use-an-object)
     * [Target Python object](#Target-Python-object)
       * [Rules if we use an object](#rules-if-we-use-an-object-1)
+  * [Example](#Example)
 
 ## Installing from the PyPI
 
@@ -237,6 +238,8 @@ After that, check [test.txt](example/test.txt),
 
 **Singer tap always send schema information**.
 
+Full example, check [example/fixerio-writefile.ipynb](example/fixerio-writefile.ipynb).
+
 #### Rules if we use an object
 
 1. Must has `parse` method.
@@ -246,3 +249,27 @@ If not, it will throw an error,
 ```text
 ValueError: target must a string or an object with method `parse`
 ```
+
+## Example
+
+1. [fixerio-gsheet.ipynb](example/fixerio-gsheet.ipynb).
+
+Tap from fixerio and target to gsheet.
+
+2. [fixerio-gsheet-twice.ipynb](example/fixerio-gsheet-twice.ipynb).
+
+Tap from fixerio and target to multiple gsheets.
+
+3. [iterator-gsheet.ipynb](example/iterator-gsheet.ipynb).
+
+use Python object as a Tap and target to gsheet.
+
+4. [fixerio-writefile.ipynb](example/fixerio-writefile.ipynb).
+
+Tap from fixerio and save to file using Python object as a Target.
+
+5 [fixerio-writefile-gsheet-bigquery.ipynb]
+
+Tap from fixerio and save to gsheet, save to file using Python object as a Target and save to bigquery.
+
+<img alt="logo" width="40%" src="picture/bigquery.png">

@@ -49,7 +49,6 @@ class Source:
         port: int = 8000,
     ):
         """
-
         Parameters
         ----------
         tap: str / object
@@ -62,9 +61,7 @@ class Source:
             important non-duplicate key from `tap.emit()`, usually a timestamp.
         port: int, (default=8000)
             prometheus exporter port.
-            
         """
-
         if not isinstance(tap, str) and not hasattr(tap, 'emit'):
             raise ValueError(
                 'tap must a string or an object with method `emit`'
@@ -94,6 +91,12 @@ class Source:
         )
 
     def add(self, target):
+        """
+        Parameters
+        ----------
+        target: str / object
+            target source.
+        """
         if not isinstance(target, str) and not hasattr(target, 'parse'):
             raise ValueError(
                 'target must a string or an object with method `parse`'
@@ -109,10 +112,24 @@ class Source:
 
     @check_type
     def delete_target(self, index: int):
+        """
+        Parameters
+        ----------
+        index: int
+            target index from `get_targets()`.
+        """
         self._targets.pop(index)
 
     @check_type
-    def start(self, debug = True, asynchronous: bool = False):
+    def start(self, debug: bool = True, asynchronous: bool = False):
+        """
+        Parameters
+        ----------
+        debug: bool, (default=True)
+            If True, will print every rows emitted and parsed.
+        asynchronous: bool, (default=False)
+            If True, emit to targets in async manner, else, loop from first target until last target.
+        """
 
         if not len(self._targets):
             raise Exception(
