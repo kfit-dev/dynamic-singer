@@ -25,11 +25,11 @@ This library is an extension for singer.io for easier deployment, metrices, auto
       * [Rules if we use an object](#rules-if-we-use-an-object-1)
   * [Example](#Example)
   * [Usage](#Usage)
-    * [dynamic_singer.Source](#dynamic_singer.Source)
-      * [dynamic_singer.Source.add](#dynamic_singer.Source.add)
-      * [dynamic_singer.Source.get_targets](#dynamic_singer.Source.get_targets)
-      * [dynamic_singer.Source.delete_target](#dynamic_singer.Source.delete_target)
-      * [dynamic_singer.Source.start](#dynamic_singer.Source.start)
+    * [dynamic_singer.Source](#dynamic_singerSource)
+      * [dynamic_singer.Source.add](#dynamic_singerSourceadd)
+      * [dynamic_singer.Source.get_targets](#dynamic_singerSourceget_targets)
+      * [dynamic_singer.Source.delete_target](#dynamic_singerSourcedelete_target)
+      * [dynamic_singer.Source.start](#dynamic_singerSourcestart)
 
 ## Installing from the PyPI
 
