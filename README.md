@@ -70,7 +70,7 @@ Now we want to keep track metrices from Tap and Targets, by default we cannot do
 tap | prometheus | target | prometheus
 ```
 
-But `prometheus` need to understand the pipe. And nobody got time for that. Do not worry, by default dynamic-singer already enable prometheus exporter. Dynamic singer captures,
+But `prometheus` need to understand the pipe. And nobody got time for that. Do not worry, by default dynamic-singer already enable prometheus exporter. dynamic-singer captures,
 
 1. output rates from tap
 2. data size from tap
