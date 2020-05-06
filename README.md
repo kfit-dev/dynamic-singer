@@ -213,7 +213,7 @@ ValueError: tap key not exist in elements from tap
 
 ### Target Python object
 
-Now if we look into target provided by singer.io, example like, https://github.com/singer-io/target-gsheet, or https://github.com/RealSelf/target-bigquery, to build target is complicated and must able to value from terminal pipe.
+Now if we look into target provided by singer.io, example like, https://github.com/singer-io/target-gsheet, or https://github.com/RealSelf/target-bigquery, to build target is complicated and must able to parse value from terminal pipe.
 
 But with dynamic-singer, to create a target is very simple.
 
