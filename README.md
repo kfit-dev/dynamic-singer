@@ -19,6 +19,10 @@ This library is an extension for singer.io for easier deployment, metrices, auto
     * [Run using Python](#run-using-python)
     * [Prometheus exporter](#Prometheus-exporter)
     * [N targets](#N-targets)
+    * [Tap Python object](#Tap-Python-object)
+      * [Rules if we use an object](#Rules-if-we-use-an-object)
+    * [Target Python object](#Target-Python-object)
+      * [Rules if we use an object](#Rules-if-we-use-an-object)
 
 ## Installing from the PyPI
 
@@ -134,3 +138,99 @@ Check second google spreadsheet here, [link](https://docs.google.com/spreadsheet
 <img alt="logo" width="40%" src="picture/sheet2.png">
 
 Full example, check [example/fixerio-gsheet-twice.ipynb](example/fixerio-gsheet-twice.ipynb).
+
+### Tap Python object
+
+Now let say I want to transfer data from python code as a Tap, I need to write it like,
+
+```bash
+python3 tap.py | target-gsheet --config gsheet-config.json
+```
+
+Good thing if using dynamic-singer, you can directly transfer data from python object into Targets.
+
+```python
+
+import dynamic_singer as dsinger
+
+class Example:
+    def __init__(self, size):
+        self.size = size
+        self.count = 0
+        
+    def emit(self):
+        if self.count < self.size:
+            self.count += 1
+            return {'data': self.count}
+
+
+example = Example(20)
+source = dsinger.Source(example, tap_name = 'example', tap_key = 'timestamp')
+source.add('target-gsheet --config gsheet-config.json')
+source.start()
+```
+
+Check google spreadsheet here, [link](https://docs.google.com/spreadsheets/d/1fH7C2KCi3P1Uef5wNv8-f_oJlYGYat9d5e5zKxkMoOk/edit?usp=sharing)
+
+<img alt="logo" width="40%" src="picture/sheet3.png">
+
+Full example, check [example/iterator-gsheet.ipynb](example/iterator-gsheet.ipynb).
+
+#### Rules if we use an object
+
+1. Must has `emit` method.
+
+If not, it will throw an error,
+
+```text
+ValueError: tap must a string or an object with method `emit`
+```
+
+2. `emit` must returned a dict, if want to terminate, simply returned `None`.
+
+If not, it will throw an error,
+
+```text
+ValueError: tap.emit() must returned a dict
+```
+
+3. `tap_schema` must a dict or None. If None, it will auto generate schema based on `tap.emit()`.
+4. `tap_name` is necessary, this is name for the tap.
+5. `tap_key` is necessary, it acted as primary key for the tap.
+
+### Target Python object
+
+Now if we look into target provided by singer.io, example like, https://github.com/singer-io/target-gsheet, or https://github.com/RealSelf/target-bigquery, to build target is complicated and must able to value from terminal pipe.
+
+But with dynamic-singer, to create a target is very simple.
+
+Let say I want to build a target that save every row from fixer-io to a text file,
+
+```python
+import dynamic_singer as dsinger
+
+class Target:
+    def __init__(self, filename):
+        self.f = open(filename, 'a')
+        
+    def parse(self, row):
+        self.f.write(row)
+        return row
+
+target = Target('test.txt')
+source = dsinger.Source('tap-fixerio --config fixer-config.json')
+source.add(target)
+source.start()
+```
+
+After that, check [test.txt](example/test.txt),
+
+```text
+{"type": "SCHEMA", "stream": "exchange_rate", "schema": {"type": "object", "properties": {"date": {"type": "string", "format": "date-time"}}, "additionalProperties": true}, "key_properties": ["date"]}{"type": "RECORD", "stream": "exchange_rate", "record": {"GBP": "0.871002", "JPY": "115.375629", "EUR": "1.0", "date": "2020-05-05T00:00:00Z"}}{"type": "RECORD", "stream": "exchange_rate", "record": {"GBP": "0.872634", "JPY": "114.804452", "EUR": "1.0", "date": "2020-05-06T00:00:00Z"}}{"type": "STATE", "value": {"start_date": "2020-05-06"}}
+```
+
+**Singer tap always send schema information**.
+
+#### Rules if we use an object
+
+1. Must has `parse` method.

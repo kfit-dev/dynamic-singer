@@ -48,12 +48,29 @@ class Source:
         tap_key: str = None,
         port: int = 8000,
     ):
+        """
+
+        Parameters
+        ----------
+        tap: str / object
+            tap source.
+        tap_schema: Dict, (default=None)
+            data schema if tap an object. If `tap_schema` is None, it will auto generate schema.
+        tap_name: str, (default=None)
+            name for tap, necessary if tap is an object. it will throw an error if not a string if tap is an object.
+        tap_key: str, (default=None)
+            important non-duplicate key from `tap.emit()`, usually a timestamp.
+        port: int, (default=8000)
+            prometheus exporter port.
+            
+        """
 
         if not isinstance(tap, str) and not hasattr(tap, 'emit'):
             raise ValueError(
                 'tap must a string or an object with method `emit`'
             )
-        if isinstance(tap, Callable):
+
+        if hasattr(tap, '__dict__'):
             self.tap = helper.Tap(
                 tap,
                 tap_schema = tap_schema,
@@ -125,31 +142,38 @@ class Source:
         else:
             pse = self.tap
 
-        for line in pse:
-            line = line.decode().strip()
-            if len(line):
-                if debug:
-                    logger.info(line)
-
-                self._tap_count.inc()
-                self._tap_data.observe(sys.getsizeof(line) / 1000)
-                self._tap_data_histogram.observe(sys.getsizeof(line) / 1000)
-
-                if asynchronous:
-
-                    @gen.coroutine
-                    def loop():
-                        r = yield [_sinking(line, pipe) for pipe in self._pipes]
-
-                    result = loop()
+        for lines in pse:
+            if lines is None:
+                break
+            if isinstance(lines, bytes):
+                lines = [lines]
+            for line in lines:
+                line = line.decode().strip()
+                if len(line):
                     if debug:
-                        logger.info(result.result())
+                        logger.info(line)
 
-                else:
-                    for pipe in self._pipes:
-                        result = _sinking(line, pipe)
+                    self._tap_count.inc()
+                    self._tap_data.observe(sys.getsizeof(line) / 1000)
+                    self._tap_data_histogram.observe(sys.getsizeof(line) / 1000)
+
+                    if asynchronous:
+
+                        @gen.coroutine
+                        def loop():
+                            r = yield [
+                                _sinking(line, pipe) for pipe in self._pipes
+                            ]
+
+                        result = loop()
                         if debug:
                             logger.info(result.result())
+
+                    else:
+                        for pipe in self._pipes:
+                            result = _sinking(line, pipe)
+                            if debug:
+                                logger.info(result.result())
 
         for pipe in self._pipes:
             if isinstance(pipe.target, Popen):
