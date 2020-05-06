@@ -5,21 +5,22 @@ from genson import SchemaBuilder
 from singer.messages import SchemaMessage, RecordMessage, format_message
 from prometheus_client import start_http_server, Counter, Summary, Histogram
 from herpetologist import check_type
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Tap:
     @check_type
-    def __init__(
-        self, source, source_schema, source_name: str, source_key: str
-    ):
-        self.source = source
-        self.source_schema = source_schema
-        self.source_name = source_name
-        self.source_key = source_key
+    def __init__(self, tap, tap_schema, tap_name: str, tap_key: str):
+        self.tap = tap
+        self.tap_schema = tap_schema
+        self.tap_name = tap_name
+        self.tap_key = tap_key
         self._send_schema = True
         self._temp = None
 
-        if not self.source_schema:
+        if not self.tap_schema:
             self.builder = SchemaBuilder()
             self.builder.add_schema({'type': 'object', 'properties': {}})
 
@@ -28,13 +29,13 @@ class Tap:
 
     def __next__(self):
         if self._temp is None:
-            row = self.source.emit()
+            row = self.tap.emit()
             if not isinstance(row, dict):
-                raise ValueError('source.emit() must returned a dict')
-            if self.source_key not in row:
-                raise ValueError('source key not exist in elements from source')
+                raise ValueError('tap.emit() must returned a dict')
+            if self.tap_key not in row:
+                raise ValueError('tap key not exist in elements from tap')
 
-            if not self.source_schema:
+            if not self.tap_schema:
                 self.builder.add_object(row)
         else:
             row = self._temp
@@ -49,7 +50,7 @@ class Tap:
                     'key_properties must be a string or list of strings'
                 )
             r = SchemaMessage(
-                stream = self.source_name,
+                stream = self.tap_name,
                 schema = schema,
                 key_properties = None,
                 bookmark_properties = None,
@@ -58,18 +59,18 @@ class Tap:
             self._temp = None
             self._send_schema = True
             r = RecordMessage(
-                stream = self.source_name, record = row, time_extracted = None
+                stream = self.tap_name, record = row, time_extracted = None
             )
         return format_message(r)
 
 
 class Target:
-    def __init__(self, target):
+    def __init__(self, target, target_str):
         self.target = target
-        if isinstance(target, str):
-            f = target
+        if isinstance(target_str, str):
+            f = target_str
         else:
-            f = target.__class__.__name__
+            f = target_str.__class__.__name__
 
         f = function.parse_name(f)
 
@@ -90,3 +91,19 @@ class Check_Error(threading.Thread):
     def run(self):
         with self.pipe.stderr:
             function.log_subprocess_output(self.pipe.stderr)
+
+
+class Check_Pipe(threading.Thread):
+    def __init__(self, pipe, debug):
+        self.pipe = pipe
+        self.debug = debug
+        threading.Thread.__init__(self)
+
+    def run(self):
+        try:
+            while True:
+                output = function.non_block_read(self.pipe).strip()
+                if output and self.debug:
+                    logger.info(output)
+        except:
+            pass

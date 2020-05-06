@@ -25,6 +25,10 @@ def parse_response(r):
     flattened['date'] = time.strftime(
         '%Y-%m-%dT%H:%M:%SZ', time.strptime(r['date'], DATE_FORMAT)
     )
+
+    for k, v in flattened.items():
+        if isinstance(v, float):
+            flattened[k] = str(v)
     return flattened
 
 

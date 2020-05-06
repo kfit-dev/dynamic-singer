@@ -17,15 +17,24 @@ logger = logging.getLogger(__name__)
 @gen.coroutine
 def _sinking(line, target):
     if isinstance(target.target, Popen):
-        target.target.stdin.write('{}'.format(line).encode())
+        target.target.stdin.write('{}\n'.format(line).encode())
         target.target.stdin.flush()
-        r = target.target.stdout.readline()
+
+        r = []
+        while True:
+            output = function.non_block_read(target.target.stdout).strip()
+            if len(output):
+                r.append(output.decode().strip())
+            else:
+                break
+        r = '\n'.join(r)
+
     else:
         r = target.target.parse(line)
 
     target._tap_count.inc()
-    target._tap_data.observe(sys.getsizeof(line) / 1000)
-    target._tap_data_histogram.observe(sys.getsizeof(line) / 1000)
+    target._tap_data.observe(sys.getsizeof(r) / 1000)
+    target._tap_data_histogram.observe(sys.getsizeof(r) / 1000)
     return r
 
 
@@ -33,28 +42,28 @@ class Source:
     @check_type
     def __init__(
         self,
-        source,
-        source_schema: Dict = None,
-        source_name: str = None,
-        source_key: str = None,
+        tap,
+        tap_schema: Dict = None,
+        tap_name: str = None,
+        tap_key: str = None,
         port: int = 8000,
     ):
 
-        if not isinstance(source, str) and not hasattr(source, 'emit'):
+        if not isinstance(tap, str) and not hasattr(tap, 'emit'):
             raise ValueError(
-                'source must a string or an object with method `emit`'
+                'tap must a string or an object with method `emit`'
             )
-        if isinstance(source, Callable):
-            self.source = helper.Tap(
-                source,
-                source_schema = source_schema,
-                source_name = source_name,
-                source_key = source_key,
+        if isinstance(tap, Callable):
+            self.tap = helper.Tap(
+                tap,
+                tap_schema = tap_schema,
+                tap_name = tap_name,
+                tap_key = tap_key,
             )
-            f = source_name
+            f = tap_name
         else:
-            self.source = source
-            f = source
+            self.tap = tap
+            f = tap
         self._targets = []
         start_http_server(port)
         f = function.parse_name(f)
@@ -68,11 +77,22 @@ class Source:
         )
 
     def add(self, target):
-        if not isinstance(target, str) and not hasattr(source, 'parse'):
+        if not isinstance(target, str) and not hasattr(target, 'parse'):
             raise ValueError(
                 'target must a string or an object with method `parse`'
             )
+
+        if isinstance(target, str):
+            if '.py' in target:
+                target = f'python3 {target}'
         self._targets.append(target)
+
+    def get_targets(self):
+        return self._targets
+
+    @check_type
+    def delete_target(self, index: int):
+        self._targets.pop(index)
 
     @check_type
     def start(self, debug = True, asynchronous: bool = False):
@@ -81,7 +101,7 @@ class Source:
             raise Exception(
                 'targets are empty, please add a target using `source.add()` first.'
             )
-        self._pipes, self._threads = [], []
+        self._pipes = []
         for target in self._targets:
             if isinstance(target, str):
                 p = Popen(
@@ -89,26 +109,27 @@ class Source:
                 )
                 t = helper.Check_Error(p)
                 t.start()
-                self._threads.append(t)
             else:
                 p = target
 
-            self._pipes.append(helper.Target(p))
+            self._pipes.append(helper.Target(p, target))
 
-        if isinstance(self.source, str):
+        if isinstance(self.tap, str):
             pse = Popen(
-                self.source.split(), stdout = PIPE, stdin = PIPE, stderr = PIPE
+                self.tap.split(), stdout = PIPE, stdin = PIPE, stderr = PIPE
             )
             t = helper.Check_Error(pse)
             t.start()
+
             pse = iter(pse.stdout.readline, b'')
         else:
-            pse = self.source
+            pse = self.tap
 
         for line in pse:
+            line = line.decode().strip()
             if len(line):
                 if debug:
-                    logger.warning(line)
+                    logger.info(line)
 
                 self._tap_count.inc()
                 self._tap_data.observe(sys.getsizeof(line) / 1000)
@@ -122,10 +143,17 @@ class Source:
 
                     result = loop()
                     if debug:
-                        logger.warning(result.result())
+                        logger.info(result.result())
 
                 else:
                     for pipe in self._pipes:
                         result = _sinking(line, pipe)
                         if debug:
-                            logger.warning(result.result())
+                            logger.info(result.result())
+
+        for pipe in self._pipes:
+            if isinstance(pipe.target, Popen):
+                try:
+                    pipe.target.communicate()
+                except:
+                    pass

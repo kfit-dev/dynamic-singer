@@ -1,13 +1,11 @@
 import re
+import os
+import fcntl
 
 
 def parse_name(f):
-    if '--config' in f:
-        f = f.split('--config')[0]
-    elif '-c' in f:
-        f = f.split('-c')[0]
     f = re.sub(r'[ ]+', ' ', f.lower()).strip()
-    f = f.replace('-', '_').replace('.', '_')
+    f = f.replace('-', '_').replace('.', '_').replace(' ', '_')
     return f
 
 
@@ -16,4 +14,15 @@ def log_subprocess_output(pipe):
         [line.decode().strip() for line in iter(pipe.readline, b'')]
     )
     if len(error):
-        raise Exception(error)
+        # raise Exception(error)
+        print(error)
+
+
+def non_block_read(output):
+    fd = output.fileno()
+    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+    try:
+        return output.readline()
+    except:
+        return ''
