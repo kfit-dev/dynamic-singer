@@ -6,7 +6,7 @@
 
 ---
 
-**dynamic-singer**, Python API, Dynamic source, N targets, Prometheus exporter, realtime transformation for Singer ETL
+**dynamic-singer**, Python API, Dynamic source, Dynamic target, N targets, Prometheus exporter, realtime transformation for Singer ETL
 
 This library is an extension for singer.io for easier deployment, metrics, auto-detect schema, realtime transformation and sinking to multiple targets. Read more about singer.io at https://www.singer.io/.
 
