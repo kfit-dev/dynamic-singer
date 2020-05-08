@@ -245,7 +245,7 @@ After that, check [test.txt](example/test.txt),
 {"type": "SCHEMA", "stream": "exchange_rate", "schema": {"type": "object", "properties": {"date": {"type": "string", "format": "date-time"}}, "additionalProperties": true}, "key_properties": ["date"]}{"type": "RECORD", "stream": "exchange_rate", "record": {"GBP": "0.871002", "JPY": "115.375629", "EUR": "1.0", "date": "2020-05-05T00:00:00Z"}}{"type": "RECORD", "stream": "exchange_rate", "record": {"GBP": "0.872634", "JPY": "114.804452", "EUR": "1.0", "date": "2020-05-06T00:00:00Z"}}{"type": "STATE", "value": {"start_date": "2020-05-06"}}
 ```
 
-**Singer tap always send schema information**.
+**Singer tap always send schema information, so remember to parse it properly**.
 
 Full example, check [example/fixerio-writefile.ipynb](example/fixerio-writefile.ipynb).
 
