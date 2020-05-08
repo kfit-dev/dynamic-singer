@@ -6,7 +6,7 @@ __packagename__ = 'dynamic-singer'
 setuptools.setup(
     name = __packagename__,
     packages = setuptools.find_packages(),
-    version = '0.0.1',
+    version = '0.0.2',
     python_requires = '>=3.7.*',
     description = 'Python API, Dynamic source, N targets, Prometheus exporter for Singer ETL',
     author = 'huseinzol05',

@@ -5,6 +5,8 @@ from genson import SchemaBuilder
 from singer.messages import SchemaMessage, RecordMessage, format_message
 from prometheus_client import start_http_server, Counter, Summary, Histogram
 from herpetologist import check_type
+from typing import Callable
+import singer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -106,3 +108,41 @@ class Check_Pipe(threading.Thread):
                     logger.info(output)
         except:
             pass
+
+
+def transformation(rows, builder, function: Callable):
+
+    results = []
+
+    for line in rows:
+        try:
+            msg = singer.parse_message(line)
+        except json.decoder.JSONDecodeError:
+            logger.error('Unable to parse:\n{}'.format(line))
+            raise
+
+        if isinstance(msg, singer.RecordMessage):
+            record = msg.record
+            record = function(record)
+            if record:
+                builder.add_object(record)
+                schema = builder.to_schema()
+                tap_name = msg.stream
+                r = SchemaMessage(
+                    stream = tap_name,
+                    schema = schema,
+                    key_properties = None,
+                    bookmark_properties = None,
+                )
+                s = format_message(r)
+                r = RecordMessage(
+                    stream = tap_name, record = record, time_extracted = None
+                )
+                r = format_message(r)
+                row = [s.encode(), r.encode()]
+                results.extend(row)
+
+        else:
+            results.append(line)
+
+    return results

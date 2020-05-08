@@ -23,6 +23,9 @@ This library is an extension for singer.io for easier deployment, metrices, auto
       * [Rules if we use an object](#Rules-if-we-use-an-object)
     * [Target Python object](#Target-Python-object)
       * [Rules if we use an object](#rules-if-we-use-an-object-1)
+    * [Realtime Transformation](#Realtime-Transformation)
+      * [Add new keys](#Add-new-keys)
+      * [Filter rows based on conditions](#Filter-rows-based-on-conditions)
   * [Example](#Example)
   * [Usage](#Usage)
     * [dynamic_singer.Source](#dynamic_singerSource)
@@ -246,6 +249,61 @@ After that, check [test.txt](example/test.txt),
 
 Full example, check [example/fixerio-writefile.ipynb](example/fixerio-writefile.ipynb).
 
+## Realtime Transformation
+
+When talking about transformation,
+
+1. We want to add new values in a row.
+2. Edit existing values in a row.
+3. Filter rows based on certain conditions.
+
+#### Add new keys
+
+dynamic-singer supported realtime transformation as simple,
+
+```python
+import dynamic_singer as dsinger
+from datetime import datetime
+
+count = 0
+def transformation(row):
+    global count
+    row['extra'] = count
+    count += 1
+    return row
+
+example = Example(20)
+source = dsinger.Source(example, tap_name = 'example-transformation', tap_key = 'timestamp')
+source.add('target-gsheet --config gsheet-config.json')
+source.start(transformation = transformation)
+```
+
+Even we added new values in the row, dynamic-singer will auto generate new schema.
+
+<img alt="logo" width="40%" src="picture/sheet4.png">
+
+Full example, check [example/iterator-transformation-gsheet.ipynb](example/iterator-transformation-gsheet.ipynb).
+
+#### Filter rows based on conditions
+
+```python
+import dynamic_singer as dsinger
+from datetime import datetime
+
+def transformation(row):
+    if row['data'] > 5:
+        return row
+
+example = Example(20)
+source = dsinger.Source(example, tap_name = 'example-transformation', tap_key = 'timestamp')
+source.add('target-gsheet --config gsheet-config.json')
+source.start(transformation = transformation)
+```
+
+<img alt="logo" width="40%" src="picture/sheet5.png">
+
+Full example, check [example/iterator-filter-gsheet.ipynb](example/iterator-filter-gsheet.ipynb).
+
 #### Rules if we use an object
 
 1. Must has `parse` method.
@@ -279,6 +337,15 @@ Tap from fixerio and save to file using Python object as a Target.
 Tap from fixerio and save to gsheet, save to file using Python object as a Target and save to bigquery.
 
 <img alt="logo" width="40%" src="picture/bigquery.png">
+
+6. [iterator-transformation-gsheet.ipynb](example/iterator-transformation-gsheet.ipynb)
+
+use Python object as a Tap, transform realtime and target to gsheet.
+
+7. [iterator-filter-gsheet.ipynb](example/iterator-filter-gsheet.ipynb)
+
+use Python object as a Tap, filter realtime and target to gsheet.
+
 
 ## Usage
 
@@ -348,10 +415,17 @@ def delete_target(self, index: int):
 #### dynamic_singer.Source.start
 
 ```python
-def start(self, debug: bool = True, asynchronous: bool = False):
+def start(
+        self,
+        transformation: Callable = None,
+        asynchronous: bool = False,
+        debug: bool = True,
+    ):
     """
     Parameters
     ----------
+    transformation: Callable, (default=None)
+        a callable variable to transform tap data, this will auto generate new data schema.
     debug: bool, (default=True)
         If True, will print every rows emitted and parsed.
     asynchronous: bool, (default=False)

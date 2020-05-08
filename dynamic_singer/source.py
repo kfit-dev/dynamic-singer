@@ -126,10 +126,17 @@ class Source:
         self._targets.pop(index)
 
     @check_type
-    def start(self, debug: bool = True, asynchronous: bool = False):
+    def start(
+        self,
+        transformation: Callable = None,
+        asynchronous: bool = False,
+        debug: bool = True,
+    ):
         """
         Parameters
         ----------
+        transformation: Callable, (default=None)
+            a callable variable to transform tap data, this will auto generate new data schema.
         debug: bool, (default=True)
             If True, will print every rows emitted and parsed.
         asynchronous: bool, (default=False)
@@ -164,11 +171,21 @@ class Source:
         else:
             pse = self.tap
 
+        if transformation:
+            from genson import SchemaBuilder
+
+            builder = SchemaBuilder()
+            builder.add_schema({'type': 'object', 'properties': {}})
+        else:
+            builder = None
+
         for lines in pse:
             if lines is None:
                 break
             if isinstance(lines, bytes):
                 lines = [lines]
+            if transformation:
+                lines = helper.transformation(lines, builder, transformation)
             for line in lines:
                 line = line.decode().strip()
                 if len(line):
