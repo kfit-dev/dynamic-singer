@@ -8,7 +8,7 @@
 
 **dynamic-singer**, Python API, Dynamic source, N targets, Prometheus exporter, realtime transformation for Singer ETL
 
-This library is an extension for singer.io for easier deployment, metrices, auto-detect schema, realtime transformation and sinking to multiple targets. Read more about singer.io at https://www.singer.io/.
+This library is an extension for singer.io for easier deployment, metrics, auto-detect schema, realtime transformation and sinking to multiple targets. Read more about singer.io at https://www.singer.io/.
 
 **dynamic-singer** also able to run in Jupyter Notebook.
 
@@ -67,7 +67,7 @@ Full example, check [example/fixerio-gsheet.ipynb](example/fixerio-gsheet.ipynb)
 
 ### Prometheus exporter
 
-Now we want to keep track metrices from Tap and Targets, by default we cannot do it using singer because singer using Bash pipe `|`, to solve that, we need to do something like,
+Now we want to keep track metrics from Tap and Targets, by default we cannot do it using singer because singer using Bash pipe `|`, to solve that, we need to do something like,
 
 ```bash
 tap | prometheus | target | prometheus
