@@ -1,9 +1,10 @@
 import threading
+import json
 from dynamic_singer import function
 from jsonschema import validate
 from genson import SchemaBuilder
 from singer.messages import SchemaMessage, RecordMessage, format_message
-from prometheus_client import start_http_server, Counter, Summary, Histogram
+from prometheus_client import Counter, Summary, Histogram
 from herpetologist import check_type
 from typing import Callable
 import singer

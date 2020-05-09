@@ -6,9 +6,9 @@ __packagename__ = 'dynamic-singer'
 setuptools.setup(
     name = __packagename__,
     packages = setuptools.find_packages(),
-    version = '0.0.3',
+    version = '0.0.4',
     python_requires = '>=3.7.*',
-    description = 'Python API, Dynamic source, N targets, Prometheus exporter for Singer ETL',
+    description = 'Python API, Dynamic source, Dynamic target, N targets, Prometheus exporter, realtime transformation for Singer ETL',
     author = 'huseinzol05',
     author_email = 'husein.zol05@gmail.com',
     url = 'https://github.com/huseinzol05/dynamic-singer',
@@ -17,6 +17,7 @@ setuptools.setup(
         'singer-python',
         'jsonschema',
         'herpetologist',
+        'tornado',
     ],
     license = 'MIT',
     classifiers = [
