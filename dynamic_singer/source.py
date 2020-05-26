@@ -43,7 +43,7 @@ class Source:
     def __init__(
         self,
         tap,
-        tap_schema: Dict = None,
+        tap_schema: dict = None,
         tap_name: str = None,
         tap_key: str = None,
         port: int = 8000,
