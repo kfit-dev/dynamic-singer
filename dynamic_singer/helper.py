@@ -17,7 +17,7 @@ class Tap:
     @check_type
     def __init__(self, tap, tap_schema, tap_name: str, tap_key: str):
 
-        if not tap_schema is None and not isinstance(tap, dict):
+        if not tap_schema is None and not isinstance(tap_schema, dict):
             raise ValueError('tap_schema must be None or a dict')
 
         self.tap = tap
