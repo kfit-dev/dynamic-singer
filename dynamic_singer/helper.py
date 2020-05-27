@@ -1,5 +1,7 @@
 import threading
 import json
+from datetime import date, datetime
+from decimal import Decimal
 from dynamic_singer import function
 from jsonschema import validate
 from genson import SchemaBuilder
@@ -147,3 +149,12 @@ def transformation(rows, builder, function: Callable):
             results.append(line)
 
     return results
+
+
+class Encoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, date) or isinstance(obj, datetime):
+            return str(obj)
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return json.JSONEncoder.default(self, obj)

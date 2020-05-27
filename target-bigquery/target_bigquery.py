@@ -296,6 +296,8 @@ def persist_lines_stream(
             if validate_records:
                 validate(msg.record, schema)
 
+            print(tables[msg.stream], [msg.record])
+
             errors[msg.stream] = bigquery_client.insert_rows_json(
                 tables[msg.stream], [msg.record]
             )

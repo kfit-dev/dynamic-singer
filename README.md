@@ -33,6 +33,10 @@ This library is an extension for singer.io for easier deployment, metrics, auto-
       * [dynamic_singer.Source.get_targets](#dynamic_singerSourceget_targets)
       * [dynamic_singer.Source.delete_target](#dynamic_singerSourcedelete_target)
       * [dynamic_singer.Source.start](#dynamic_singerSourcestart)
+  * [Extra](#Extra)
+    * [Postgres](#Postgres)
+      * [bigquery_schema](#bigquery_schema)
+      * [Tap](#Tap)
 
 ## Installing from the PyPI
 
@@ -346,6 +350,11 @@ use Python object as a Tap, transform realtime and target to gsheet.
 
 use Python object as a Tap, filter realtime and target to gsheet.
 
+8. [postgres-bq.ipynb](example/postgres-bq.ipynb)
+
+use dynamic_singer.extra.postgres.Tap to pull data from postgres and dump to bigquery.
+
+<img alt="logo" width="40%" src="picture/bigquery2.png">
 
 ## Usage
 
@@ -432,3 +441,74 @@ def start(
         If True, emit to targets in async manner, else, loop from first target until last target.
     """
 ```
+
+## Extra
+
+### Postgres
+
+#### bigquery_schema
+
+```python
+def bigquery_schema(schema: str, table: str, connection):
+    """
+    Generate bigquery schema.
+
+    Parameters
+    ----------
+    schema: str
+        postgres schema.
+    table: str
+        table name.
+    connection: object
+        psycopg2 connection object.
+
+    Returns
+    -------
+    result : dict
+    """
+```
+
+Full example, check [example/postgres-bq.ipynb](example/postgres-bq.ipynb).
+
+#### Tap
+
+```python
+class Tap:
+    def __init__(
+        self,
+        schema: str,
+        table: str,
+        primary_key: str,
+        connection,
+        persistent,
+        batch_size: int = 100,
+        rest_time: int = 10,
+        filter: str = '',
+    ):
+
+        """
+        Postgres Tap using query statement.
+
+        Parameters
+        ----------
+        schema: str
+            postgres schema.
+        table: str
+            table name.
+        primary_key: str
+            column acted as primary key.
+        connection: object
+            psycopg2 connection object.
+        persistent: object
+            a python object that must has `pull` and `push` method to persist primary_key state.
+        batch_size: int, (default=100)
+            size of rows for each pull from postgres.
+        rest_time: int, (default=10)
+            rest for rest_time seconds after done pulled.
+        filter: str, (default='')
+            sql where statement for additional filter. Example, 'price > 0 and discount > 10', depends on table definition.
+
+        """
+```
+
+Full example, check [example/postgres-bq.ipynb](example/postgres-bq.ipynb).
