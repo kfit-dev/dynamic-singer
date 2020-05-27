@@ -223,9 +223,9 @@ def persist_lines_job(
             schemas[table] = msg.schema
             key_properties[table] = msg.key_properties
             # tables[table] = bigquery.Table(dataset.table(table), schema=build_schema(schemas[table]))
-            rows[table] = TemporaryFile(mode = 'w+b')
-            logger.debug(rows[table])
-            errors[table] = None
+            if table not in rows:
+                rows[table] = TemporaryFile(mode = 'w+b')
+                errors[table] = None
             # try:
             #     tables[table] = bigquery_client.create_table(tables[table])
             # except exceptions.Conflict:
