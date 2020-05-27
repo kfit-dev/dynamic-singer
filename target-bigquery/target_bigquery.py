@@ -140,6 +140,7 @@ def persist_lines_job(
     truncate = False,
     validate_records = True,
     key_path = None,
+    batch_size = 100,
 ):
     state = None
     schemas = {}
@@ -147,6 +148,28 @@ def persist_lines_job(
     tables = {}
     rows = {}
     errors = {}
+    count = 0
+
+    def push_bq():
+        for table in rows.keys():
+
+            table_ref = bigquery_client.dataset(dataset_id).table(table)
+            SCHEMA = build_schema(schemas[table])
+            load_config = LoadJobConfig()
+            load_config.schema = SCHEMA
+            load_config.source_format = SourceFormat.NEWLINE_DELIMITED_JSON
+
+            if truncate:
+                load_config.write_disposition = WriteDisposition.WRITE_TRUNCATE
+
+            rows[table].seek(0)
+            logger.info('loading {} to Bigquery.\n'.format(table))
+            load_job = bigquery_client.load_table_from_file(
+                rows[table], table_ref, job_config = load_config
+            )
+            logger.info('loading job {}'.format(load_job.job_id))
+            logger.info(load_job.result())
+            rows[table] = TemporaryFile(mode = 'w+b')
 
     if key_path:
         credentials = service_account.Credentials.from_service_account_file(
@@ -158,11 +181,6 @@ def persist_lines_job(
         )
     else:
         bigquery_client = bigquery.Client(project = project_id)
-
-    # try:
-    #     dataset = bigquery_client.create_dataset(Dataset(dataset_ref)) or Dataset(dataset_ref)
-    # except exceptions.Conflict:
-    #     pass
 
     for line in lines:
         try:
@@ -188,6 +206,10 @@ def persist_lines_job(
             dat = bytes(json.dumps(msg.record) + '\n', 'UTF-8')
 
             rows[msg.stream].write(dat)
+            count += 1
+
+            if count % batch_size == 0:
+                push_bq()
             # rows[msg.stream].write(bytes(str(msg.record) + '\n', 'UTF-8'))
 
             state = None
@@ -202,6 +224,7 @@ def persist_lines_job(
             key_properties[table] = msg.key_properties
             # tables[table] = bigquery.Table(dataset.table(table), schema=build_schema(schemas[table]))
             rows[table] = TemporaryFile(mode = 'w+b')
+            logger.debug(rows[table])
             errors[table] = None
             # try:
             #     tables[table] = bigquery_client.create_table(tables[table])
@@ -215,29 +238,7 @@ def persist_lines_job(
         else:
             raise Exception('Unrecognized message {}'.format(msg))
 
-    for table in rows.keys():
-        table_ref = bigquery_client.dataset(dataset_id).table(table)
-        SCHEMA = build_schema(schemas[table])
-        load_config = LoadJobConfig()
-        load_config.schema = SCHEMA
-        load_config.source_format = SourceFormat.NEWLINE_DELIMITED_JSON
-
-        if truncate:
-            load_config.write_disposition = WriteDisposition.WRITE_TRUNCATE
-
-        rows[table].seek(0)
-        logger.info('loading {} to Bigquery.\n'.format(table))
-        load_job = bigquery_client.load_table_from_file(
-            rows[table], table_ref, job_config = load_config
-        )
-        logger.info('loading job {}'.format(load_job.job_id))
-        logger.info(load_job.result())
-
-    # for table in errors.keys():
-    #     if not errors[table]:
-    #         print('Loaded {} row(s) into {}:{}'.format(rows[table], dataset_id, table), tables[table].path)
-    #     else:
-    #         print('Errors:', errors[table], sep=" ")
+    push_bq()
 
     return state
 
@@ -295,8 +296,6 @@ def persist_lines_stream(
 
             if validate_records:
                 validate(msg.record, schema)
-
-            print(tables[msg.stream], [msg.record])
 
             errors[msg.stream] = bigquery_client.insert_rows_json(
                 tables[msg.stream], [msg.record]
@@ -400,6 +399,7 @@ def main():
             truncate = truncate,
             validate_records = validate_records,
             key_path = config.get('key_path'),
+            batch_size = config.get('batch_size', 100),
         )
 
     emit_state(state)
