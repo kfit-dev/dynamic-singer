@@ -156,7 +156,8 @@ class Tap:
         self.cursor.execute(query)
         r = self.cursor.fetchall()
         self.batch = json.loads(json.dumps(r, cls = Encoder))
-        self.index = self.batch[-1][self.primary_key]
+        if len(self.batch):
+            self.index = self.batch[-1][self.primary_key]
 
         if self.debug:
             logger.info(f'current primary key: {self.index}')
