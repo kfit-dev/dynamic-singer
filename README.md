@@ -26,6 +26,7 @@ This library is an extension for singer.io for easier deployment, metrics, auto-
     * [Realtime Transformation](#Realtime-Transformation)
       * [Add new keys](#Add-new-keys)
       * [Filter rows based on conditions](#Filter-rows-based-on-conditions)
+      * [Define Schema](#Define-Schema)
   * [Example](#Example)
   * [Usage](#Usage)
     * [dynamic_singer.Source](#dynamic_singerSource)
@@ -253,6 +254,16 @@ After that, check [test.txt](example/test.txt),
 
 Full example, check [example/fixerio-writefile.ipynb](example/fixerio-writefile.ipynb).
 
+#### Rules if we use an object
+
+1. Must has `parse` method.
+
+If not, it will throw an error,
+
+```text
+ValueError: target must a string or an object with method `parse`
+```
+
 ## Realtime Transformation
 
 When talking about transformation,
@@ -308,15 +319,24 @@ source.start(transformation = transformation)
 
 Full example, check [example/iterator-filter-gsheet.ipynb](example/iterator-filter-gsheet.ipynb).
 
-#### Rules if we use an object
+#### Define schema
 
-1. Must has `parse` method.
+Some of databases not supported generated schema, so we need to map by ourselves.
 
-If not, it will throw an error,
+If you want to define schema type for returned value, simply,
 
-```text
-ValueError: target must a string or an object with method `parse`
+```python
+count = 0
+def transformation(row):
+    global count
+    row['extra'] = count
+    count += 1
+    return row, {'extra': 'int'}
 ```
+
+Example like [example/postgres-bq-transformation.ipynb](example/postgres-bq-transformation.ipynb).
+
+Again, this is not necessary for most of unstructured target, but we recommended to include it.
 
 ## Example
 
@@ -355,6 +375,10 @@ use Python object as a Tap, filter realtime and target to gsheet.
 use dynamic_singer.extra.postgres.Tap to pull data from postgres and dump to bigquery.
 
 <img alt="logo" width="40%" src="picture/bigquery2.png">
+
+9. [postgres-bq-transformation.ipynb](example/postgres-bq-tranformation.ipynb)
+
+use dynamic_singer.extra.postgres.Tap to pull data from postgres, do transformation and dump to bigquery.
 
 ## Usage
 
@@ -425,20 +449,23 @@ def delete_target(self, index: int):
 
 ```python
 def start(
-        self,
-        transformation: Callable = None,
-        asynchronous: bool = False,
-        debug: bool = True,
-    ):
+    self,
+    transformation: Callable = None,
+    asynchronous: bool = False,
+    debug: bool = True,
+    ignore_null: bool = True,
+):
     """
     Parameters
     ----------
     transformation: Callable, (default=None)
         a callable variable to transform tap data, this will auto generate new data schema.
-    debug: bool, (default=True)
-        If True, will print every rows emitted and parsed.
     asynchronous: bool, (default=False)
         If True, emit to targets in async manner, else, loop from first target until last target.
+    debug: bool, (default=True)
+        If True, will print every rows emitted and parsed.
+    ignore_null: bool, (default=True)
+        If False, if one of schema value is Null, it will throw an exception.
     """
 ```
 
@@ -468,7 +495,7 @@ def bigquery_schema(schema: str, table: str, connection):
     """
 ```
 
-Full example, check [example/postgres-bq.ipynb](example/postgres-bq.ipynb).
+Full example, check [example/postgres-bq.ipynb](example/postgres-bq.ipynb) or [example/postgres-bq-transformation.ipynb](example/postgres-bq-transformation.ipynb).
 
 #### Tap
 
@@ -511,4 +538,4 @@ class Tap:
         """
 ```
 
-Full example, check [example/postgres-bq.ipynb](example/postgres-bq.ipynb).
+Full example, check [example/postgres-bq.ipynb](example/postgres-bq.ipynb) or [example/postgres-bq-transformation.ipynb](example/postgres-bq-transformation.ipynb).

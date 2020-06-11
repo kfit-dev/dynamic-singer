@@ -1,5 +1,7 @@
 {
     "project_id": "",
-    "dataset_id": "fixerio",
-    "key_path": "bq-account.json"
+    "dataset_id": "",
+    "validate_records": false,
+    "stream_data": false,
+    "batch_size": 100
 }

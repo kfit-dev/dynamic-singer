@@ -13,6 +13,7 @@ import singer
 import logging
 
 logger = logging.getLogger(__name__)
+type_mapping = {'int': 'integer', 'float': 'number', 'str': 'string'}
 
 
 class Tap:
@@ -113,7 +114,7 @@ class Check_Pipe(threading.Thread):
             pass
 
 
-def transformation(rows, builder, function: Callable):
+def transformation(rows, builder, function: Callable, tap_schema = None):
 
     results = []
 
@@ -128,8 +129,30 @@ def transformation(rows, builder, function: Callable):
             record = msg.record
             record = function(record)
             if record:
+                if isinstance(record, tuple):
+                    if len(record) != 2:
+                        raise ValueError(
+                            'transformation must returned (row, dictionary) or row.'
+                        )
+                    record, types = record
+                else:
+                    types = None
                 builder.add_object(record)
                 schema = builder.to_schema()
+                if tap_schema:
+                    for k, v in tap_schema['properties'].items():
+                        if k in schema['properties']:
+                            schema['properties'][k] = v
+                if types:
+                    for k, v in types.items():
+                        if k in schema['properties']:
+                            v = type_mapping.get(v, v)
+                            if not isinstance(v, str):
+                                raise ValueError(
+                                    f'value {v} from {k} not supported.'
+                                )
+                            schema['properties'][k] = {'type': v}
+
                 tap_name = msg.stream
                 r = SchemaMessage(
                     stream = tap_name,

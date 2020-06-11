@@ -75,8 +75,10 @@ class Source:
                 tap_key = tap_key,
             )
             f = tap_name
+            self.tap_schema = tap_schema
         else:
             self.tap = tap
+            self.tap_schema = None
             f = tap
         self._targets = []
         start_http_server(port)
@@ -131,16 +133,19 @@ class Source:
         transformation: Callable = None,
         asynchronous: bool = False,
         debug: bool = True,
+        ignore_null: bool = True,
     ):
         """
         Parameters
         ----------
         transformation: Callable, (default=None)
             a callable variable to transform tap data, this will auto generate new data schema.
-        debug: bool, (default=True)
-            If True, will print every rows emitted and parsed.
         asynchronous: bool, (default=False)
             If True, emit to targets in async manner, else, loop from first target until last target.
+        debug: bool, (default=True)
+            If True, will print every rows emitted and parsed.
+        ignore_null: bool, (default=True)
+            If False, if one of schema value is Null, it will throw an exception.
         """
 
         if not len(self._targets):
@@ -185,12 +190,22 @@ class Source:
             if isinstance(lines, bytes):
                 lines = [lines]
             if transformation:
-                lines = helper.transformation(lines, builder, transformation)
+                lines = helper.transformation(
+                    lines, builder, transformation, tap_schema = self.tap_schema
+                )
             for line in lines:
                 line = line.decode().strip()
                 if len(line):
                     if debug:
                         logger.info(line)
+
+                    if '"type": "SCHEMA"' in line and not ignore_null:
+                        l = json.loads(line)
+                        for k, v in l['schema']['properties'].items():
+                            if v['type'].lower() == 'null':
+                                raise ValueError(
+                                    f'{k} is a NULL, some of database cannot accept NULL schema. To ignore this exception, simply set `ignore_null` = True.'
+                                )
 
                     self._tap_count.inc()
                     self._tap_data.observe(sys.getsizeof(line) / 1000)
