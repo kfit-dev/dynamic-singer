@@ -17,8 +17,7 @@ type_mapping = {
     'int': 'integer',
     'float': 'number',
     'str': 'string',
-    'timestamp': 'string',
-    'datetime': 'string',
+    'datetime': 'timestamp',
     'date': 'string',
     'time': 'string',
 }

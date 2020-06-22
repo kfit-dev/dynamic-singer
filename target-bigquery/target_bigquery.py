@@ -208,6 +208,8 @@ def persist_lines_job(
             rows[msg.stream].write(dat)
             count += 1
 
+            print(f'total count: {count}, batch size: {batch_size}')
+
             if count % batch_size == 0:
                 push_bq()
             # rows[msg.stream].write(bytes(str(msg.record) + '\n', 'UTF-8'))
