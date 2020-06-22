@@ -130,6 +130,7 @@ class Tap:
         self.first_time = True
         self.filter = filter
         self.debug = debug
+        self.count = 0
 
     def pull(self):
         if self.index is None:
@@ -162,15 +163,21 @@ class Tap:
         if self.debug:
             logger.info(f'current primary key: {self.index}')
 
-        self.persistent.push(self.index)
         self.first_time = False
 
     def emit(self):
         while self.i == len(self.batch):
             if not self.first_time:
-                time.sleep(self.rest_time)
+                if self.count == len(self.batch):
+                    time.sleep(self.rest_time)
+                    self.persistent.push(self.index)
+                else:
+                    raise Exception(
+                        'size of rows processed not same as rows emitted.'
+                    )
             self.pull()
             self.i = 0
+            self.count = 0
 
         self.i += 1
         return self.batch[self.i - 1]

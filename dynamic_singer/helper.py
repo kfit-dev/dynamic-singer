@@ -13,7 +13,15 @@ import singer
 import logging
 
 logger = logging.getLogger(__name__)
-type_mapping = {'int': 'integer', 'float': 'number', 'str': 'string'}
+type_mapping = {
+    'int': 'integer',
+    'float': 'number',
+    'str': 'string',
+    'timestamp': 'string',
+    'datetime': 'string',
+    'date': 'string',
+    'time': 'string',
+}
 
 
 class Tap:

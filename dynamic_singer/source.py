@@ -175,6 +175,7 @@ class Source:
             pse = iter(pse.stdout.readline, b'')
         else:
             pse = self.tap
+            self.tap.tap.count = 0
 
         if transformation:
             from genson import SchemaBuilder
@@ -228,6 +229,11 @@ class Source:
                             result = _sinking(line, pipe)
                             if debug:
                                 logger.info(result.result())
+
+                    if '"type": "RECORD"' in line and not isinstance(
+                        self.tap, str
+                    ):
+                        self.tap.tap.count += 1
 
         for pipe in self._pipes:
             if isinstance(pipe.target, Popen):
