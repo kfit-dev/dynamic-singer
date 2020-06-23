@@ -38,6 +38,8 @@ This library is an extension for singer.io for easier deployment, metrics, auto-
     * [Postgres](#Postgres)
       * [bigquery_schema](#bigquery_schema)
       * [Tap](#Tap)
+    * [Persistent](#Persistent)
+      * [BQ_GCS](#BQ_GCS)
 
 ## Installing from the PyPI
 
@@ -539,3 +541,42 @@ class Tap:
 ```
 
 Full example, check [example/postgres-bq.ipynb](example/postgres-bq.ipynb) or [example/postgres-bq-transformation.ipynb](example/postgres-bq-transformation.ipynb).
+
+### Persistent
+
+#### BQ_GCS
+
+```python
+class BQ_GCS:
+    def __init__(
+        self,
+        bq_client,
+        bucket,
+        project: str,
+        schema: str,
+        table: str,
+        primary_key: str,
+        prefix: str = 'singer_record',
+    ):
+
+        """
+        Persistency layer for BQ combined with GCS.
+
+        Parameters
+        ----------
+        bq_client: object
+            initiated from `from google.cloud import bigquery`.
+        bucket: object
+            initiated from `from google.cloud import storage`.
+        project: str
+            project id.
+        schema: str
+            BQ schema.
+        table: str
+            table name.
+        primary_key: str
+            column acted as primary key.
+        prefix: str
+            prefix path for GCS.
+        """
+```

@@ -10,6 +10,8 @@ import threading
 import http.client
 import urllib
 import pkg_resources
+import threading
+import time
 
 from jsonschema import validate
 import singer
@@ -141,6 +143,7 @@ def persist_lines_job(
     validate_records = True,
     key_path = None,
     batch_size = 100,
+    push_time = 300,
 ):
     state = None
     schemas = {}
@@ -149,6 +152,17 @@ def persist_lines_job(
     rows = {}
     errors = {}
     count = 0
+
+    if key_path:
+        credentials = service_account.Credentials.from_service_account_file(
+            key_path,
+            scopes = ['https://www.googleapis.com/auth/cloud-platform'],
+        )
+        bigquery_client = bigquery.Client(
+            credentials = credentials, project = project_id
+        )
+    else:
+        bigquery_client = bigquery.Client(project = project_id)
 
     def push_bq():
         for table in rows.keys():
@@ -171,16 +185,17 @@ def persist_lines_job(
             logger.info(load_job.result())
             rows[table] = TemporaryFile(mode = 'w+b')
 
-    if key_path:
-        credentials = service_account.Credentials.from_service_account_file(
-            key_path,
-            scopes = ['https://www.googleapis.com/auth/cloud-platform'],
-        )
-        bigquery_client = bigquery.Client(
-            credentials = credentials, project = project_id
-        )
-    else:
-        bigquery_client = bigquery.Client(project = project_id)
+    class Push(threading.Thread):
+        def __init__(self):
+            threading.Thread.__init__(self)
+
+        def run(self):
+            while True:
+                time.sleep(push_time)
+                push_bq()
+
+    t = Push()
+    t.start()
 
     for line in lines:
         try:
@@ -208,10 +223,9 @@ def persist_lines_job(
             rows[msg.stream].write(dat)
             count += 1
 
-            print(f'total count: {count}, batch size: {batch_size}')
-
             if count % batch_size == 0:
                 push_bq()
+
             # rows[msg.stream].write(bytes(str(msg.record) + '\n', 'UTF-8'))
 
             state = None
