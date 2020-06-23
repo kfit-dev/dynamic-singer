@@ -185,59 +185,68 @@ class Source:
         else:
             builder = None
 
-        for lines in pse:
-            if lines is None:
-                break
-            if isinstance(lines, bytes):
-                lines = [lines]
-            if transformation:
-                lines = helper.transformation(
-                    lines, builder, transformation, tap_schema = self.tap_schema
-                )
-            for line in lines:
-                line = line.decode().strip()
-                if len(line):
-                    if debug:
-                        logger.info(line)
-
-                    if '"type": "SCHEMA"' in line and not ignore_null:
-                        l = json.loads(line)
-                        for k, v in l['schema']['properties'].items():
-                            if v['type'].lower() == 'null':
-                                raise ValueError(
-                                    f'{k} is a NULL, some of database cannot accept NULL schema. To ignore this exception, simply set `ignore_null` = True.'
-                                )
-
-                    self._tap_count.inc()
-                    self._tap_data.observe(sys.getsizeof(line) / 1000)
-                    self._tap_data_histogram.observe(sys.getsizeof(line) / 1000)
-
-                    if asynchronous:
-
-                        @gen.coroutine
-                        def loop():
-                            r = yield [
-                                _sinking(line, pipe) for pipe in self._pipes
-                            ]
-
-                        result = loop()
+        try:
+            for lines in pse:
+                if lines is None:
+                    break
+                if isinstance(lines, bytes):
+                    lines = [lines]
+                if transformation:
+                    lines = helper.transformation(
+                        lines,
+                        builder,
+                        transformation,
+                        tap_schema = self.tap_schema,
+                    )
+                for line in lines:
+                    line = line.decode().strip()
+                    if len(line):
                         if debug:
-                            logger.info(result.result())
+                            logger.info(line)
 
-                    else:
-                        for pipe in self._pipes:
-                            result = _sinking(line, pipe)
+                        if '"type": "SCHEMA"' in line and not ignore_null:
+                            l = json.loads(line)
+                            for k, v in l['schema']['properties'].items():
+                                if v['type'].lower() == 'null':
+                                    raise ValueError(
+                                        f'{k} is a NULL, some of database cannot accept NULL schema. To ignore this exception, simply set `ignore_null` = True.'
+                                    )
+
+                        self._tap_count.inc()
+                        self._tap_data.observe(sys.getsizeof(line) / 1000)
+                        self._tap_data_histogram.observe(
+                            sys.getsizeof(line) / 1000
+                        )
+
+                        if asynchronous:
+
+                            @gen.coroutine
+                            def loop():
+                                r = yield [
+                                    _sinking(line, pipe) for pipe in self._pipes
+                                ]
+
+                            result = loop()
                             if debug:
                                 logger.info(result.result())
 
-                    if '"type": "RECORD"' in line and not isinstance(
-                        self.tap, str
-                    ):
-                        self.tap.tap.count += 1
+                        else:
+                            for pipe in self._pipes:
+                                result = _sinking(line, pipe)
+                                if debug:
+                                    logger.info(result.result())
 
-        for pipe in self._pipes:
-            if isinstance(pipe.target, Popen):
-                try:
-                    pipe.target.communicate()
-                except:
-                    pass
+                        if '"type": "RECORD"' in line and not isinstance(
+                            self.tap, str
+                        ):
+                            self.tap.tap.count += 1
+
+            for pipe in self._pipes:
+                if isinstance(pipe.target, Popen):
+                    try:
+                        pipe.target.communicate()
+                    except:
+                        pass
+
+        except Exception as e:
+            raise Exception(e)
