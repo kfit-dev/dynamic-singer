@@ -474,6 +474,8 @@ def start(
     """
 ```
 
+`graceful_shutdown` is useful if we deployed in an environment that able to auto restart like Kubernetes.
+
 ## Extra
 
 ### Postgres
@@ -573,6 +575,38 @@ class BQ_GCS:
             initiated from `from google.cloud import storage`.
         project: str
             project id.
+        schema: str
+            BQ schema.
+        table: str
+            table name.
+        primary_key: str
+            column acted as primary key.
+        prefix: str
+            prefix path for GCS.
+        """
+```
+
+#### GCS
+
+```python
+class GCS:
+    def __init__(
+        self,
+        bucket,
+        project: str,
+        schema: str,
+        table: str,
+        primary_key: str,
+        prefix: str = 'singer_record',
+    ):
+
+        """
+        Persistency layer using GCS.
+
+        Parameters
+        ----------
+        bucket: object
+            initiated from `from google.cloud import storage`.
         schema: str
             BQ schema.
         table: str
