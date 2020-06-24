@@ -456,6 +456,7 @@ def start(
     asynchronous: bool = False,
     debug: bool = True,
     ignore_null: bool = True,
+    graceful_shutdown: int = 30,
 ):
     """
     Parameters
@@ -468,6 +469,8 @@ def start(
         If True, will print every rows emitted and parsed.
     ignore_null: bool, (default=True)
         If False, if one of schema value is Null, it will throw an exception.
+    graceful_shutdown: int, (default=30)
+        If bigger than 0, any error happened, will automatically shutdown after sleep.
     """
 ```
 

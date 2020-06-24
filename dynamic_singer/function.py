@@ -2,6 +2,9 @@ import re
 import os
 import fcntl
 import time
+import logging
+
+logger = logging.getLogger()
 
 
 def parse_name(f):
@@ -10,7 +13,7 @@ def parse_name(f):
     return f
 
 
-def log_subprocess_output(pipe, time_sleep = 30):
+def log_subprocess_output(pipe, graceful_shutdown = 30):
     error = '\n'.join(
         [line.decode().strip() for line in iter(pipe.readline, b'')]
     )
@@ -21,8 +24,12 @@ def log_subprocess_output(pipe, time_sleep = 30):
             or 'During handling of the above exception' in error
             or 'another exception occurred' in error
         ):
-            time.sleep(time_sleep)
-            raise Exception(error)
+            if graceful_shutdown > 0:
+                logger.error(e)
+                time.sleep(graceful_shutdown)
+                os._exit(1)
+            else:
+                raise Exception(error)
 
 
 def non_block_read(output):

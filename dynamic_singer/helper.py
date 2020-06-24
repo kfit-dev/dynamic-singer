@@ -12,7 +12,8 @@ from typing import Callable
 import singer
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
+
 type_mapping = {
     'int': 'integer',
     'float': 'number',
@@ -96,13 +97,16 @@ class Target:
 
 
 class Check_Error(threading.Thread):
-    def __init__(self, pipe):
+    def __init__(self, pipe, graceful_shutdown):
         self.pipe = pipe
+        self.graceful_shutdown = graceful_shutdown
         threading.Thread.__init__(self)
 
     def run(self):
         with self.pipe.stderr:
-            function.log_subprocess_output(self.pipe.stderr)
+            function.log_subprocess_output(
+                self.pipe.stderr, self.graceful_shutdown
+            )
 
 
 class Check_Pipe(threading.Thread):

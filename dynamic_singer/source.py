@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import singer
+import time
 from subprocess import Popen, PIPE, STDOUT
 from dynamic_singer import helper, function
 from typing import Callable, Dict
@@ -11,7 +12,7 @@ from tornado import gen
 from prometheus_client import start_http_server, Counter, Summary, Histogram
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 @gen.coroutine
@@ -134,6 +135,7 @@ class Source:
         asynchronous: bool = False,
         debug: bool = True,
         ignore_null: bool = True,
+        graceful_shutdown: int = 30,
     ):
         """
         Parameters
@@ -146,8 +148,11 @@ class Source:
             If True, will print every rows emitted and parsed.
         ignore_null: bool, (default=True)
             If False, if one of schema value is Null, it will throw an exception.
+        graceful_shutdown: int, (default=30)
+            If bigger than 0, any error happened, will automatically shutdown after sleep.
         """
-
+        if graceful_shutdown < 0:
+            raise ValueError('`graceful_shutdown` must bigger than -1')
         if not len(self._targets):
             raise Exception(
                 'targets are empty, please add a target using `source.add()` first.'
@@ -158,7 +163,7 @@ class Source:
                 p = Popen(
                     target.split(), stdout = PIPE, stdin = PIPE, stderr = PIPE
                 )
-                t = helper.Check_Error(p)
+                t = helper.Check_Error(p, graceful_shutdown)
                 t.start()
             else:
                 p = target
@@ -169,7 +174,7 @@ class Source:
             pse = Popen(
                 self.tap.split(), stdout = PIPE, stdin = PIPE, stderr = PIPE
             )
-            t = helper.Check_Error(pse)
+            t = helper.Check_Error(pse, graceful_shutdown)
             t.start()
 
             pse = iter(pse.stdout.readline, b'')
@@ -249,4 +254,9 @@ class Source:
                         pass
 
         except Exception as e:
-            raise Exception(e)
+            if graceful_shutdown > 0:
+                logger.error(e)
+                time.sleep(graceful_shutdown)
+                os._exit(1)
+            else:
+                raise Exception(e)
