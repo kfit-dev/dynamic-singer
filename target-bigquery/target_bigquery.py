@@ -359,36 +359,9 @@ def persist_lines_stream(
     return state
 
 
-def collect():
-    try:
-        version = pkg_resources.get_distribution('target-bigquery').version
-        conn = http.client.HTTPConnection('collector.singer.io', timeout = 10)
-        conn.connect()
-        params = {
-            'e': 'se',
-            'aid': 'singer',
-            'se_ca': 'target-bigquery',
-            'se_ac': 'open',
-            'se_la': version,
-        }
-        conn.request('GET', '/i?' + urllib.parse.urlencode(params))
-        conn.getresponse()
-        conn.close()
-    except:
-        logger.debug('Collection request failed')
-
-
 def main():
     with open(flags.config) as input:
         config = json.load(input)
-
-    if not config.get('disable_collection', False):
-        logger.info(
-            'Sending version information to stitchdata.com. '
-            + 'To disable sending anonymous usage data, set '
-            + 'the config parameter "disable_collection" to true'
-        )
-        threading.Thread(target = collect).start()
 
     if config.get('replication_method') == 'FULL_TABLE':
         truncate = True
