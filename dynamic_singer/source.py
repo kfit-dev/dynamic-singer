@@ -11,6 +11,7 @@ from herpetologist import check_type
 from tornado import gen
 from prometheus_client import start_http_server, Counter, Summary, Histogram
 import logging
+from datetime import datetime
 
 logger = logging.getLogger()
 
@@ -81,6 +82,8 @@ class Source:
             self.tap = tap
             self.tap_schema = None
             f = tap
+
+        self.tap_name = tap_name
         self._targets = []
         start_http_server(port)
         f = function.parse_name(f)
@@ -136,6 +139,7 @@ class Source:
         debug: bool = True,
         ignore_null: bool = True,
         graceful_shutdown: int = 30,
+        post_function: Callable = None,
     ):
         """
         Parameters
@@ -150,6 +154,8 @@ class Source:
             If False, if one of schema value is Null, it will throw an exception.
         graceful_shutdown: int, (default=30)
             If bigger than 0, any error happened, will automatically shutdown after sleep.
+        post_function: Callable, (default=None)
+            If callable, it will pass metadata to the function.
         """
         if graceful_shutdown < 0:
             raise ValueError('`graceful_shutdown` must bigger than -1')
@@ -245,6 +251,13 @@ class Source:
                             self.tap, str
                         ):
                             self.tap.tap.count += 1
+                        if post_function is not None:
+                            post_function(
+                                {
+                                    'tap_name': self.tap_name,
+                                    'timestamp': str(datetime.now()),
+                                }
+                            )
 
             for pipe in self._pipes:
                 if isinstance(pipe.target, Popen):

@@ -11,3 +11,4 @@ dask-worker-space
 *client_secret.json
 *egg-info
 *bq-account.json
+bigquery-config.json

@@ -25,7 +25,9 @@ def log_subprocess_output(pipe, graceful_shutdown = 30):
             or 'another exception occurred' in error
         ):
             if graceful_shutdown > 0:
-                logger.error(error)
+                error = error.split('\n')
+                message = {'last': '\n'.join(error[-3:])}
+                logger.error(error, extra = message)
                 time.sleep(graceful_shutdown)
                 os._exit(1)
             else:

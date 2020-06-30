@@ -457,6 +457,7 @@ def start(
     debug: bool = True,
     ignore_null: bool = True,
     graceful_shutdown: int = 30,
+    post_function: Callable = None,
 ):
     """
     Parameters
@@ -471,6 +472,8 @@ def start(
         If False, if one of schema value is Null, it will throw an exception.
     graceful_shutdown: int, (default=30)
         If bigger than 0, any error happened, will automatically shutdown after sleep.
+    post_function: Callable, (default=None)
+        If callable, it will pass metadata to the function.
     """
 ```
 
