@@ -140,6 +140,7 @@ class Source:
         ignore_null: bool = True,
         graceful_shutdown: int = 30,
         post_function: Callable = None,
+        parse_error: bool = True,
     ):
         """
         Parameters
@@ -156,6 +157,8 @@ class Source:
             If bigger than 0, any error happened, will automatically shutdown after sleep.
         post_function: Callable, (default=None)
             If callable, it will pass metadata to the function.
+        parse_error: bool, (default=True)
+            If True, last 3 rows of errors will put as extra parameter in logging.error. This is useful for sentry.io purpose.
         """
         if graceful_shutdown < 0:
             raise ValueError('`graceful_shutdown` must bigger than -1')
@@ -169,7 +172,7 @@ class Source:
                 p = Popen(
                     target.split(), stdout = PIPE, stdin = PIPE, stderr = PIPE
                 )
-                t = helper.Check_Error(p, graceful_shutdown)
+                t = helper.Check_Error(p, graceful_shutdown, parse_error)
                 t.start()
             else:
                 p = target
@@ -180,7 +183,7 @@ class Source:
             pse = Popen(
                 self.tap.split(), stdout = PIPE, stdin = PIPE, stderr = PIPE
             )
-            t = helper.Check_Error(pse, graceful_shutdown)
+            t = helper.Check_Error(pse, graceful_shutdown, parse_error)
             t.start()
 
             pse = iter(pse.stdout.readline, b'')

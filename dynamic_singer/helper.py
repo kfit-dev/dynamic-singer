@@ -97,15 +97,16 @@ class Target:
 
 
 class Check_Error(threading.Thread):
-    def __init__(self, pipe, graceful_shutdown):
+    def __init__(self, pipe, graceful_shutdown, parse_error):
         self.pipe = pipe
         self.graceful_shutdown = graceful_shutdown
+        self.parse_error = parse_error
         threading.Thread.__init__(self)
 
     def run(self):
         with self.pipe.stderr:
             function.log_subprocess_output(
-                self.pipe.stderr, self.graceful_shutdown
+                self.pipe.stderr, self.graceful_shutdown, self.parse_error
             )
 
 
